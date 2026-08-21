@@ -12,8 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Store,
-  ExternalLink,
   User,
   LogOut,
   ChevronDown,
@@ -23,9 +21,9 @@ import {
 export function Header() {
   const { data: session } = useSession();
   const user = session?.user as any;
-  const role = user?.role || "SUPER_ADMIN";
+  const role = user?.userRole || user?.role || "Kullanıcı";
   const fullName = user?.name || user?.fullName || "Yönetici";
-  const email = user?.email || "admin@haqanwear.com";
+  const email = user?.email || "admin@okulbenim.com";
 
   // Initials for avatar
   const initials = fullName
@@ -37,20 +35,8 @@ export function Header() {
 
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-30 shadow-2xs">
-      {/* Sol: Mağazayı Gör Butonu */}
-      <div className="flex items-center gap-3">
-        <a
-          href="http://localhost:3000"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-muted/30 hover:bg-muted text-foreground transition-all hover:border-primary/40 shadow-2xs group"
-          title="Müşteri Vitrinini Yeni Sekmede Aç"
-        >
-          <Store className="h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" />
-          <span>Mağazayı Gör</span>
-          <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
-        </a>
-      </div>
+      {/* Sol Alan */}
+      <div className="flex items-center gap-3"></div>
 
       {/* Sağ: Zengin Kullanıcı & Çıkış Kartı */}
       <div className="flex items-center gap-3">

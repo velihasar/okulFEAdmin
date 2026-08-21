@@ -40,36 +40,13 @@ export const authOptions = {
             return null;
           }
 
-          const { Token, RefreshToken, Expiration, Claims, Roles } = result.Data;
-
-          // Backend'den gelen gerçek rolleri (Groups) ve Claims listesini kontrol ediyoruz
-          const rolesList: string[] = Array.isArray(Roles)
-            ? Roles
-            : (Array.isArray(result.Data?.roles) ? result.Data.roles : []);
-
-          // Yalnızca ve kesinlikle SuperAdmin rolüne sahip kullanıcılar giriş yapabilir
-          const isSuperAdmin =
-            rolesList.some((r: string) => {
-              const clean = r.toLowerCase().replace(/[\s_-]/g, "");
-              return clean === "superadmin" || clean === "superadministrator";
-            }) ||
-            (Claims as string[])?.some((c: string) => {
-              const clean = c.toLowerCase().replace(/[\s_-]/g, "");
-              return (
-                clean === "superadmin" ||
-                clean === "role:superadmin" ||
-                clean === "role:super_admin"
-              );
-            });
-
-          if (!isSuperAdmin) {
-            console.warn(`Access Denied: User "${credentials.email}" does not have SuperAdmin role.`);
-            return null;
-          }
+          const { Token, RefreshToken, Expiration, Claims } = result.Data;
+          const claimsList: string[] = Array.isArray(Claims) ? Claims : [];
 
           // JWT Token içinden kullanıcının gerçek Ad Soyad (FullName) ve ID bilgisini alıyoruz
           let fullName = credentials.email;
           let userId: number | undefined = undefined;
+          let userRole = "SUPER_ADMIN";
 
           if (Token) {
             try {
@@ -87,6 +64,13 @@ export const authOptions = {
                   decodedPayload["nameid"] ||
                   decodedPayload["sub"];
                 if (idStr) userId = Number(idStr);
+
+                const jwtRole =
+                  decodedPayload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+                  decodedPayload["role"];
+                if (jwtRole) {
+                  userRole = jwtRole;
+                }
               }
             } catch (e) {
               console.error("Token payload decode error:", e);
@@ -98,8 +82,9 @@ export const authOptions = {
             email: credentials.email,
             name: fullName,
             fullName: fullName,
-            role: "SUPER_ADMIN",
-            roles: rolesList,
+            role: userRole || "Yönetici",
+            userRole: userRole || "Yönetici",
+            claims: claimsList,
             accessToken: Token,
             refreshToken: RefreshToken,
             expiration: Expiration,
@@ -118,7 +103,8 @@ export const authOptions = {
         token.name = user.name;
         token.fullName = user.fullName;
         token.role = user.role;
-        token.roles = user.roles;
+        token.userRole = user.userRole;
+        token.claims = user.claims;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.expiration = user.expiration;
@@ -130,7 +116,8 @@ export const authOptions = {
         (session.user as any).name = token.name || token.fullName;
         (session.user as any).fullName = token.fullName || token.name;
         (session.user as any).role = token.role;
-        (session.user as any).roles = token.roles;
+        (session.user as any).userRole = token.userRole;
+        (session.user as any).claims = token.claims;
       }
       session.accessToken = token.accessToken;
       session.refreshToken = token.refreshToken;

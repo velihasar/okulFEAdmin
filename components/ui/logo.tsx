@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { GraduationCap } from "lucide-react";
 
 interface LogoProps {
   className?: string;
@@ -7,36 +8,18 @@ interface LogoProps {
 
 export function Logo({ className, showText = true }: LogoProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center", className)}>
-      <svg 
-        viewBox="0 0 260 80" 
-        className="w-full h-auto max-h-12" 
-        fill="currentColor" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <g stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none">
-          {/* H */}
-          <path d="M 10 20 L 10 60 M 10 40 L 40 40 M 40 20 L 40 60" />
-          
-          {/* A */}
-          <path d="M 55 60 L 75 20 L 95 60" />
-          <circle cx="75" cy="45" r="4" fill="currentColor" stroke="none" />
-          
-          {/* Q */}
-          <circle cx="130" cy="40" r="18" />
-          <path d="M 140 50 L 152 62" />
-          
-          {/* A */}
-          <path d="M 165 60 L 185 20 L 205 60" />
-          <circle cx="185" cy="45" r="4" fill="currentColor" stroke="none" />
-          
-          {/* N */}
-          <path d="M 220 60 L 220 20 L 250 60 L 250 20" />
-        </g>
-      </svg>
+    <div className={cn("flex items-center gap-2.5 select-none", className)}>
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+        <GraduationCap className="h-5 w-5" />
+      </div>
       {showText && (
-        <div className="text-[0.65rem] sm:text-xs tracking-[0.4em] font-medium text-primary mt-1 pl-[0.4em]">
-          WEAR
+        <div className="flex flex-col">
+          <span className="text-base font-bold tracking-tight text-foreground leading-none">
+            OKUL BENİM
+          </span>
+          <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase mt-0.5">
+            Yönetim Paneli
+          </span>
         </div>
       )}
     </div>
