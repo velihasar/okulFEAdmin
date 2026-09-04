@@ -68,8 +68,10 @@ export const authOptions = {
                 const jwtRole =
                   decodedPayload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
                   decodedPayload["role"];
-                if (jwtRole) {
+                if (jwtRole && jwtRole !== "Person" && jwtRole !== "Unknown") {
                   userRole = jwtRole;
+                } else {
+                  userRole = "SUPER_ADMIN";
                 }
               }
             } catch (e) {
@@ -82,8 +84,8 @@ export const authOptions = {
             email: credentials.email,
             name: fullName,
             fullName: fullName,
-            role: userRole || "Yönetici",
-            userRole: userRole || "Yönetici",
+            role: userRole || "SUPER_ADMIN",
+            userRole: userRole || "SUPER_ADMIN",
             claims: claimsList,
             accessToken: Token,
             refreshToken: RefreshToken,

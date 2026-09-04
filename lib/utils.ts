@@ -6,13 +6,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 const MINIO_URL = process.env.NEXT_PUBLIC_MINIO_URL || "http://127.0.0.1:9000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:5001/api";
 
 export function getMinioUrl(path?: string | null): string {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:") || path.startsWith("data:")) {
     return path;
   }
-  return `${MINIO_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  const fileName = path.split("/").pop() || path;
+  return `${API_URL}/tenants/logo/${fileName}`;
 }
 
 export function getCategoryBreadcrumb(category: any, allCategories: any[] = []): string {

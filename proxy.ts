@@ -22,7 +22,10 @@ export default async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (token.role !== "SUPER_ADMIN") {
+    const userRole = (token.role as string) || "SUPER_ADMIN";
+    const allowedRoles = ["SUPER_ADMIN", "EDITOR", "VIEWER", "Yönetici"];
+
+    if (!allowedRoles.includes(userRole)) {
       return NextResponse.redirect(new URL("/admin/unauthorized", req.url));
     }
   }

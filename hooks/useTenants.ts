@@ -60,11 +60,12 @@ export function useTenant(id: number) {
 export function useCreateTenant() {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiDataResult<TenantCreateResponseDto>, Error, CreateTenantCommand>({
-    mutationFn: async (data: CreateTenantCommand) => {
+  return useMutation<ApiDataResult<TenantCreateResponseDto>, Error, FormData | CreateTenantCommand>({
+    mutationFn: async (data: FormData | CreateTenantCommand) => {
       const response = await axiosInstance.post<ApiDataResult<TenantCreateResponseDto>>(
         "/api/tenants",
-        data
+        data,
+        data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined
       );
       return response.data;
     },
@@ -81,17 +82,21 @@ export function useCreateTenant() {
 export function useUpdateTenant() {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiDataResult<TenantUpdateResponseDto>, Error, UpdateTenantCommand>({
-    mutationFn: async (data: UpdateTenantCommand) => {
+  return useMutation<ApiDataResult<TenantUpdateResponseDto>, Error, FormData | UpdateTenantCommand>({
+    mutationFn: async (data: FormData | UpdateTenantCommand) => {
       const response = await axiosInstance.put<ApiDataResult<TenantUpdateResponseDto>>(
         "/api/tenants",
-        data
+        data,
+        data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined
       );
       return response.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tenantKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: tenantKeys.detail(variables.id) });
+      const id = variables instanceof FormData ? Number(variables.get("id")) : variables.id;
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: tenantKeys.detail(id) });
+      }
     },
   });
 }

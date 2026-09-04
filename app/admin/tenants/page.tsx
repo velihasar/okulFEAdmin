@@ -63,7 +63,9 @@ import {
   RefreshCw,
   School,
   Hash,
+  Upload,
 } from "lucide-react";
+import { getMinioUrl } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function TenantsPage() {
@@ -86,6 +88,8 @@ export default function TenantsPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   // Open Add Dialog
   const handleOpenAdd = () => {
@@ -93,6 +97,8 @@ export default function TenantsPage() {
     setName("");
     setCode("");
     setLogoUrl("");
+    setLogoFile(null);
+    setPreviewUrl("");
     setIsFormOpen(true);
   };
 
@@ -102,7 +108,18 @@ export default function TenantsPage() {
     setName(tenant.name || "");
     setCode(tenant.code || "");
     setLogoUrl(tenant.logoUrl || "");
+    setLogoFile(null);
+    setPreviewUrl(tenant.logoUrl || "");
     setIsFormOpen(true);
+  };
+
+  // Handle Logo File Select
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   // Submit Add / Edit
@@ -114,51 +131,49 @@ export default function TenantsPage() {
       return;
     }
 
+    const formData = new FormData();
+    formData.append("name", name.trim());
+    if (code.trim()) formData.append("code", code.trim());
+
+    if (logoFile) {
+      formData.append("logo", logoFile);
+    } else if (logoUrl.trim()) {
+      formData.append("logoUrl", logoUrl.trim());
+    }
+
     if (selectedTenant) {
       // Update
-      updateTenantMutation.mutate(
-        {
-          id: selectedTenant.id,
-          name: name.trim(),
-          code: code.trim() || undefined,
-          logoUrl: logoUrl.trim() || undefined,
+      formData.append("id", String(selectedTenant.id));
+      formData.append("isActive", String(selectedTenant.isActive ?? true));
+
+      updateTenantMutation.mutate(formData, {
+        onSuccess: (res) => {
+          if (res.success !== false) {
+            toast.success(res.message || "Kurum bilgileri başarıyla güncellendi.");
+            setIsFormOpen(false);
+          } else {
+            toast.error(res.message || "Güncelleme sırasında hata oluştu.");
+          }
         },
-        {
-          onSuccess: (res) => {
-            if (res.success !== false) {
-              toast.success(res.message || "Kurum bilgileri başarıyla güncellendi.");
-              setIsFormOpen(false);
-            } else {
-              toast.error(res.message || "Güncelleme sırasında hata oluştu.");
-            }
-          },
-          onError: (err) => {
-            toast.error("Hata: " + (err.message || "Güncelleme yapılamadı."));
-          },
-        }
-      );
+        onError: (err) => {
+          toast.error("Hata: " + (err.message || "Güncelleme yapılamadı."));
+        },
+      });
     } else {
       // Create
-      createTenantMutation.mutate(
-        {
-          name: name.trim(),
-          code: code.trim() || undefined,
-          logoUrl: logoUrl.trim() || undefined,
+      createTenantMutation.mutate(formData, {
+        onSuccess: (res) => {
+          if (res.success !== false) {
+            toast.success(res.message || "Yeni kurum başarıyla eklendi.");
+            setIsFormOpen(false);
+          } else {
+            toast.error(res.message || "Kurum eklenirken hata oluştu.");
+          }
         },
-        {
-          onSuccess: (res) => {
-            if (res.success !== false) {
-              toast.success(res.message || "Yeni kurum başarıyla eklendi.");
-              setIsFormOpen(false);
-            } else {
-              toast.error(res.message || "Kurum eklenirken hata oluştu.");
-            }
-          },
-          onError: (err) => {
-            toast.error("Hata: " + (err.message || "Kurum eklenemedi."));
-          },
-        }
-      );
+        onError: (err) => {
+          toast.error("Hata: " + (err.message || "Kurum eklenemedi."));
+        },
+      });
     }
   };
 
@@ -289,9 +304,9 @@ export default function TenantsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">#ID</TableHead>
+                  <TableHead>Logo</TableHead>
                   <TableHead>Kurum Adı</TableHead>
                   <TableHead>Kurum Kodu</TableHead>
-                  <TableHead>Logo URL</TableHead>
                   <TableHead className="text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
@@ -301,15 +316,31 @@ export default function TenantsPage() {
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       #{tenant.id}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+                    <TableCell>
+                      {tenant.logoUrl ? (
+                        <div className="h-12 w-12 flex items-center justify-center rounded-lg border bg-card p-1 shadow-xs overflow-hidden">
+                          <img
+                            src={getMinioUrl(tenant.logoUrl)}
+                            alt={tenant.name}
+                            className="max-h-full max-w-full object-contain"
+                            onError={(e) => {
+                              // If MinIO image fails to load, replace parent with letter avatar fallback
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                parent.className = "flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold";
+                                parent.innerHTML = tenant.name ? tenant.name.charAt(0).toUpperCase() : "O";
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
                           {tenant.name ? tenant.name.charAt(0).toUpperCase() : "O"}
                         </div>
-                        <div>
-                          <div className="font-semibold text-foreground">{tenant.name}</div>
-                        </div>
-                      </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="font-semibold text-foreground">{tenant.name}</div>
                     </TableCell>
                     <TableCell>
                       {tenant.code ? (
@@ -320,9 +351,6 @@ export default function TenantsPage() {
                       ) : (
                         <span className="text-xs text-muted-foreground italic">Belirtilmedi</span>
                       )}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                      {tenant.logoUrl || <span className="italic">Yok</span>}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -390,14 +418,36 @@ export default function TenantsPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tenant-logo">Logo URL (İsteğe Bağlı)</Label>
-              <Input
-                id="tenant-logo"
-                placeholder="https://..."
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-              />
+            <div className="space-y-3">
+              <Label htmlFor="tenant-logo">Kurum Logosu</Label>
+              {previewUrl && (
+                <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-xl border border-dashed border-border/70 gap-2">
+                  <div className="h-28 w-28 flex items-center justify-center rounded-lg border bg-card p-2 shadow-sm shrink-0 overflow-hidden">
+                    <img
+                      src={getMinioUrl(previewUrl)}
+                      alt="Logo Önizleme"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {logoFile ? `Seçilen: ${logoFile.name}` : "Mevcut Logo"}
+                  </span>
+                </div>
+              )}
+              <label
+                htmlFor="tenant-logo"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-sm cursor-pointer transition-all shadow-xs active:scale-[0.99] w-full"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{logoFile ? "Farklı Görsel Seç" : "Görsel Dosyası Seç (PNG, JPG)"}</span>
+                <input
+                  id="tenant-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoFileChange}
+                  className="hidden"
+                />
+              </label>
             </div>
 
             <DialogFooter className="mt-6">
