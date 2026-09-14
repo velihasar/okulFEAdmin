@@ -247,9 +247,9 @@ export function StudentParentsDialog({
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
           {/* Section 1: Linked Parents */}
           <div>
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-emerald-500" />
-              Bağlı Veliler ({linkedStudentParents.length})
+              <span>Bağlı Veliler ({linkedStudentParents.length})</span>
             </h3>
 
             {linkedStudentParents.length === 0 ? (
