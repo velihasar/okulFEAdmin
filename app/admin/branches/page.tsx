@@ -158,7 +158,7 @@ function BranchesContent() {
           tenantId: isSuperAdmin ? formTenantId : undefined,
           name: name.trim(),
           address: address.trim() || undefined,
-          phone: phone.trim() || undefined,
+          phone: phone.replace(/\s+/g, "").trim() || undefined,
           isActive,
         },
         {
@@ -183,7 +183,7 @@ function BranchesContent() {
           tenantId: isSuperAdmin ? formTenantId : undefined,
           name: name.trim(),
           address: address.trim() || undefined,
-          phone: phone.trim() || undefined,
+          phone: phone.replace(/\s+/g, "").trim() || undefined,
         },
         {
           onSuccess: (res) => {
@@ -535,7 +535,7 @@ function BranchesContent() {
                 </Label>
                 <Input
                   id="branch-name"
-                  placeholder="Örn: Kadıköy Şubesi / Merkez Kampüs"
+                  placeholder="Örn: 10-A, Sayısal-1, Merkez Kampüs"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -544,10 +544,13 @@ function BranchesContent() {
 
               {/* Telefon */}
               <div className="space-y-2">
-                <Label htmlFor="branch-phone">Telefon Numarası</Label>
+                <Label htmlFor="branch-phone" className="flex items-center justify-between">
+                  <span>Telefon Numarası</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">(Opsiyonel)</span>
+                </Label>
                 <Input
                   id="branch-phone"
-                  placeholder="Örn: 0216 555 0000"
+                  placeholder="05xxxxxxxxx"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
@@ -555,10 +558,13 @@ function BranchesContent() {
 
               {/* Adres */}
               <div className="space-y-2">
-                <Label htmlFor="branch-address">Şube Adresi</Label>
+                <Label htmlFor="branch-address" className="flex items-center justify-between">
+                  <span>Şube Adresi</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">(Opsiyonel)</span>
+                </Label>
                 <Input
                   id="branch-address"
-                  placeholder="Örn: Caferağa Mah. Moda Cad. No:12 Kadıköy/İstanbul"
+                  placeholder="İlçe / Şehir adresi giriniz..."
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                 />

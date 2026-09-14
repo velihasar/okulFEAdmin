@@ -94,9 +94,11 @@ export function StudentParentsDialog({
   const linkedStudentParents = studentParents.filter((sp) => sp.studentId === student.id);
 
   // Student Person details
-  const studentPerson = people.find((p) => p.id === student.personId);
+  const studentPerson = (student as any).person || people.find((p) => p.id === student.personId);
   const studentFullName = studentPerson
     ? `${studentPerson.firstName} ${studentPerson.lastName}`
+    : student.firstName && student.lastName
+    ? `${student.firstName} ${student.lastName}`
     : `Öğrenci #${student.studentNumber}`;
 
   // Effective tenant ID for the student
@@ -189,8 +191,8 @@ export function StudentParentsDialog({
   const handleCreateAndLinkNewParent = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName.trim() || !lastName.trim()) {
-      toast.error("Lütfen veli ad ve soyadını giriniz.");
+    if (!firstName.trim() || !lastName.trim() || !phone.trim()) {
+      toast.error("Lütfen veli ad, soyad ve telefon numarası alanlarını doldurunuz.");
       return;
     }
 
@@ -199,7 +201,7 @@ export function StudentParentsDialog({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim() || undefined,
-        phone: phone.trim() || undefined,
+        phone: phone.replace(/\s+/g, "").trim() || undefined,
         tenantId: tenantId,
       });
 
@@ -245,10 +247,10 @@ export function StudentParentsDialog({
         <DialogHeader className="p-5 border-b border-border bg-muted/30">
           <DialogTitle className="flex items-center gap-2 text-lg font-bold text-foreground">
             <Users className="w-5 h-5 text-primary" />
-            Veli Yönetimi: <span className="text-primary">{studentFullName}</span>
+            Veli Yönetimi — <span className="text-primary font-extrabold">{studentFullName}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-            Öğrenci No: <strong className="text-foreground">{student.studentNumber}</strong> — Veli kayıtlarını ekleyebilir, güncelleyebilir veya mevcut velilerden bağlayabilirsiniz.
+            Öğrenci: <strong className="text-foreground font-semibold">{studentFullName}</strong> {student.studentNumber ? `(No: ${student.studentNumber})` : ""} — Veli kayıtlarını ekleyebilir, güncelleyebilir veya mevcut velilerden bağlayabilirsiniz.
           </DialogDescription>
         </DialogHeader>
 
@@ -373,7 +375,9 @@ export function StudentParentsDialog({
               <TabsContent value="existing" className="mt-3 p-3.5 rounded-xl bg-muted/30 border border-border space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs font-medium text-foreground mb-1 block">Veli / Kişi Seçin *</Label>
+                    <Label className="text-xs font-medium text-foreground mb-1 block">
+                      Veli / Kişi Seçin <span className="text-destructive">*</span>
+                    </Label>
                     <select
                       value={selectedPersonId || ""}
                       onChange={(e) => setSelectedPersonId(e.target.value ? Number(e.target.value) : undefined)}
@@ -389,7 +393,9 @@ export function StudentParentsDialog({
                   </div>
 
                   <div>
-                    <Label className="text-xs font-medium text-foreground mb-1 block">Yakınlık Derecesi</Label>
+                    <Label className="text-xs font-medium text-foreground mb-1 block">
+                      Yakınlık Derecesi <span className="text-destructive">*</span>
+                    </Label>
                     <select
                       value={existingRelationship}
                       onChange={(e) => setExistingRelationship(e.target.value)}
@@ -410,7 +416,7 @@ export function StudentParentsDialog({
                     <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="İsim veya telefon yazarak filtreleyin (Örn: İsmail, Şahin)..."
+                      placeholder="İsim veya telefon yazarak filtreleyin..."
                       value={existingSearchTerm}
                       onChange={(e) => setExistingSearchTerm(e.target.value)}
                       className="pl-8 h-8 text-xs bg-background"
@@ -450,11 +456,13 @@ export function StudentParentsDialog({
                 <form onSubmit={handleCreateAndLinkNewParent} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <Label className="text-xs font-medium text-foreground mb-1 block">Ad *</Label>
+                      <Label className="text-xs font-medium text-foreground mb-1 block">
+                        Ad <span className="text-destructive">*</span>
+                      </Label>
                       <Input
                         required
                         type="text"
-                        placeholder="Örn: İsmail"
+                        placeholder="Velinin adını giriniz..."
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         className="h-8 text-xs bg-background"
@@ -462,11 +470,13 @@ export function StudentParentsDialog({
                     </div>
 
                     <div>
-                      <Label className="text-xs font-medium text-foreground mb-1 block">Soyad *</Label>
+                      <Label className="text-xs font-medium text-foreground mb-1 block">
+                        Soyad <span className="text-destructive">*</span>
+                      </Label>
                       <Input
                         required
                         type="text"
-                        placeholder="Örn: Şahin"
+                        placeholder="Velinin soyadını giriniz..."
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         className="h-8 text-xs bg-background"
@@ -474,10 +484,13 @@ export function StudentParentsDialog({
                     </div>
 
                     <div>
-                      <Label className="text-xs font-medium text-foreground mb-1 block">Telefon</Label>
+                      <Label className="text-xs font-medium text-foreground mb-1 block">
+                        Telefon <span className="text-destructive">*</span>
+                      </Label>
                       <Input
+                        required
                         type="text"
-                        placeholder="Örn: 0532 123 4567"
+                        placeholder="05xxxxxxxxx"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="h-8 text-xs bg-background"
@@ -485,10 +498,13 @@ export function StudentParentsDialog({
                     </div>
 
                     <div>
-                      <Label className="text-xs font-medium text-foreground mb-1 block">E-Posta</Label>
+                      <Label className="text-xs font-medium text-foreground mb-1 block flex items-center justify-between">
+                        <span>E-Posta</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">(Opsiyonel)</span>
+                      </Label>
                       <Input
                         type="email"
-                        placeholder="Örn: veli@example.com"
+                        placeholder="ornek@okul.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="h-8 text-xs bg-background"
@@ -496,7 +512,9 @@ export function StudentParentsDialog({
                     </div>
 
                     <div>
-                      <Label className="text-xs font-medium text-foreground mb-1 block">Yakınlık Derecesi</Label>
+                      <Label className="text-xs font-medium text-foreground mb-1 block">
+                        Yakınlık Derecesi <span className="text-destructive">*</span>
+                      </Label>
                       <select
                         value={newRelationship}
                         onChange={(e) => setNewRelationship(e.target.value)}

@@ -67,7 +67,7 @@ export function UserDialog({
     const payload: any = {
       fullName: fullName.trim(),
       email: email.trim(),
-      mobilePhones: mobilePhones.trim() || undefined,
+      mobilePhones: mobilePhones.replace(/\s+/g, "").trim() || undefined,
       tenantId: tenantId ?? 0,
     };
 
@@ -146,7 +146,7 @@ export function UserDialog({
             <Label htmlFor="phone">Telefon Numarası</Label>
             <Input
               id="phone"
-              placeholder="Örn: 05xx xxx xx xx"
+              placeholder="05xxxxxxxxx"
               value={mobilePhones}
               onChange={(e) => setMobilePhones(e.target.value)}
             />

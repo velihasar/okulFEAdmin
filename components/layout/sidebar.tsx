@@ -93,18 +93,6 @@ export function Sidebar() {
       addTitle: "Yeni Veli Kaydet",
     },
     {
-      title: "Öğrenci - Veli Eşleştirme",
-      href: "/admin/student-parents",
-      icon: HeartHandshake,
-      hideForSuperAdmin: true,
-    },
-    {
-      title: "Kişi Kayıtları",
-      href: "/admin/people",
-      icon: Contact,
-      hideForSuperAdmin: true,
-    },
-    {
       title: "Kullanıcılar",
       href: "/admin/users",
       icon: UserCog,

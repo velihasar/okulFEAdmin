@@ -77,7 +77,7 @@ export default function ProfilePage() {
       userId: userId || userDetail?.userId || userDetail?.UserId,
       fullName: fullName.trim(),
       email: email.trim(),
-      mobilePhones: mobilePhones.trim(),
+      mobilePhones: mobilePhones.replace(/\s+/g, "").trim(),
     };
 
     updateMutation.mutate(payload, {
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                   className="pl-9 h-10"
                   value={mobilePhones}
                   onChange={(e) => setMobilePhones(e.target.value)}
-                  placeholder="05xx xxx xx xx"
+                  placeholder="05xxxxxxxxx"
                 />
               </div>
             </div>

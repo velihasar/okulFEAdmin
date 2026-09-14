@@ -237,7 +237,7 @@ function StudentsContent() {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim() || undefined,
-            phone: phone.trim() || undefined,
+            phone: phone.replace(/\s+/g, "").trim() || undefined,
             photoUrl: photoUrl.trim() || undefined,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : undefined,
           });
@@ -297,7 +297,7 @@ function StudentsContent() {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim() || undefined,
-            phone: phone.trim() || undefined,
+            phone: phone.replace(/\s+/g, "").trim() || undefined,
             photoUrl: photoUrl.trim() || undefined,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : undefined,
           });
@@ -856,20 +856,24 @@ function StudentsContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="firstName">Ad *</Label>
+                    <Label htmlFor="firstName">
+                      Ad <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="firstName"
-                      placeholder="Ahmet"
+                      placeholder="Öğrencinin adını giriniz..."
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="lastName">Soyad *</Label>
+                    <Label htmlFor="lastName">
+                      Soyad <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="lastName"
-                      placeholder="Yılmaz"
+                      placeholder="Öğrencinin soyadını giriniz..."
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       required
@@ -879,20 +883,26 @@ function StudentsContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="email">E-posta Adresi</Label>
+                    <Label htmlFor="email" className="flex items-center justify-between">
+                      <span>E-posta Adresi</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">(Opsiyonel)</span>
+                    </Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="ahmet@okul.com"
+                      placeholder="ornek@okul.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="phone">Telefon Numarası</Label>
+                    <Label htmlFor="phone" className="flex items-center justify-between">
+                      <span>Telefon Numarası</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">(Opsiyonel)</span>
+                    </Label>
                     <Input
                       id="phone"
-                      placeholder="0555 123 45 67"
+                      placeholder="05xxxxxxxxx"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
@@ -914,7 +924,9 @@ function StudentsContent() {
             {/* Existing Person Selection Mode */}
             {personSelectionMode === "existing_person" && !selectedStudent && (
               <div className="space-y-2 p-4 rounded-lg border border-border/60 bg-card/50">
-                <Label htmlFor="personSelect">Kayıtlı Kişi Seçin *</Label>
+                <Label htmlFor="personSelect">
+                  Kayıtlı Kişi Seçin <span className="text-destructive">*</span>
+                </Label>
                 <select
                   id="personSelect"
                   value={selectedPersonId || ""}
@@ -941,7 +953,9 @@ function StudentsContent() {
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="studentNumber">Öğrenci Numarası *</Label>
+                  <Label htmlFor="studentNumber">
+                    Öğrenci Numarası <span className="text-destructive">*</span>
+                  </Label>
                   <Button
                     type="button"
                     variant="ghost"
