@@ -8,6 +8,9 @@ import { usePeople, useCreatePerson, useUpdatePerson, useUploadPersonPhoto } fro
 import { useTenants } from "@/hooks/useTenants";
 import { useBranches } from "@/hooks/useBranches";
 import { useStudentBranches, useCreateStudentBranch, useDeleteStudentBranch } from "@/hooks/useStudentBranches";
+import { useParents } from "@/hooks/useParents";
+import { useStudentParents } from "@/hooks/useStudentParents";
+import { StudentParentsDialog } from "@/components/admin/student-parents-dialog";
 import { StudentGetAllDto } from "@/types/student.types";
 import { PersonGetAllDto } from "@/types/person.types";
 import {
@@ -95,6 +98,8 @@ function StudentsContent() {
   const { data: tenants } = useTenants();
   const { data: branches } = useBranches();
   const { data: studentBranches, refetch: refetchStudentBranches } = useStudentBranches();
+  const { data: parents } = useParents();
+  const { data: studentParents } = useStudentParents();
 
   // Mutations
   const createStudentMutation = useCreateStudent();
@@ -114,6 +119,7 @@ function StudentsContent() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentGetAllDto | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<StudentGetAllDto | null>(null);
+  const [selectedStudentForParents, setSelectedStudentForParents] = useState<StudentGetAllDto | null>(null);
 
   // Form Mode: "new_person" vs "existing_person" vs "edit_person"
   const [personSelectionMode, setPersonSelectionMode] = useState<"new_person" | "existing_person" | "edit_person">("new_person");
@@ -660,7 +666,27 @@ function StudentsContent() {
                             : "-"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {(() => {
+                              const parentCount = (studentParents || []).filter((sp) => sp.studentId === st.id).length;
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedStudentForParents(st)}
+                                  title="Veli İşlemleri"
+                                  className="h-8 gap-1 text-xs border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 font-medium"
+                                >
+                                  <Users className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                                  <span>Veliler</span>
+                                  {parentCount > 0 && (
+                                    <Badge variant="secondary" className="ml-0.5 px-1.5 py-0 h-4 text-[10px] bg-indigo-500/20 text-indigo-600 dark:text-indigo-200 border-none font-bold">
+                                      {parentCount}
+                                    </Badge>
+                                  )}
+                                </Button>
+                              );
+                            })()}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -690,6 +716,17 @@ function StudentsContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Student Parents Dialog */}
+      <StudentParentsDialog
+        isOpen={!!selectedStudentForParents}
+        onClose={() => setSelectedStudentForParents(null)}
+        student={selectedStudentForParents}
+        people={people}
+        parents={parents}
+        studentParents={studentParents}
+        tenantId={isSuperAdmin ? selectedTenantId : userTenantId}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
