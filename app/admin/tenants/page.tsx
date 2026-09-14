@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   useTenants,
   useCreateTenant,
@@ -20,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -64,9 +66,38 @@ import {
   School,
   Hash,
   Upload,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
-import { getMinioUrl } from "@/lib/utils";
+import { getMinioUrl, getApiErrorMessage, checkIsSuperAdmin } from "@/lib/utils";
 import { toast } from "sonner";
+
+function TenantLogoItem({ logoUrl, name }: { logoUrl?: string | null; name?: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [logoUrl]);
+
+  if (!logoUrl || hasError) {
+    return (
+      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+        {name ? name.charAt(0).toUpperCase() : "O"}
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-12 w-12 flex items-center justify-center rounded-lg border bg-card p-1 shadow-xs overflow-hidden">
+      <img
+        src={getMinioUrl(logoUrl)}
+        alt={name || "Tenant Logo"}
+        className="max-h-full max-w-full object-contain"
+        onError={() => setHasError(true)}
+      />
+    </div>
+  );
+}
 
 export default function TenantsPage() {
   const { data: tenants, isLoading, isError, refetch } = useTenants();
@@ -90,6 +121,7 @@ export default function TenantsPage() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isActive, setIsActive] = useState<boolean>(true);
 
   // Open Add Dialog
   const handleOpenAdd = () => {
@@ -99,6 +131,7 @@ export default function TenantsPage() {
     setLogoUrl("");
     setLogoFile(null);
     setPreviewUrl("");
+    setIsActive(true);
     setIsFormOpen(true);
   };
 
@@ -110,6 +143,7 @@ export default function TenantsPage() {
     setLogoUrl(tenant.logoUrl || "");
     setLogoFile(null);
     setPreviewUrl(tenant.logoUrl || "");
+    setIsActive(tenant.isActive ?? true);
     setIsFormOpen(true);
   };
 
@@ -134,6 +168,7 @@ export default function TenantsPage() {
     const formData = new FormData();
     formData.append("name", name.trim());
     if (code.trim()) formData.append("code", code.trim());
+    formData.append("isActive", String(isActive));
 
     if (logoFile) {
       formData.append("logo", logoFile);
@@ -144,19 +179,19 @@ export default function TenantsPage() {
     if (selectedTenant) {
       // Update
       formData.append("id", String(selectedTenant.id));
-      formData.append("isActive", String(selectedTenant.isActive ?? true));
 
       updateTenantMutation.mutate(formData, {
         onSuccess: (res) => {
           if (res.success !== false) {
-            toast.success(res.message || "Kurum bilgileri başarıyla güncellendi.");
+            toast.success("Kurum bilgileri başarıyla güncellendi.");
             setIsFormOpen(false);
+            refetch();
           } else {
-            toast.error(res.message || "Güncelleme sırasında hata oluştu.");
+            toast.error(getApiErrorMessage(res.message, "Güncelleme sırasında hata oluştu."));
           }
         },
         onError: (err) => {
-          toast.error("Hata: " + (err.message || "Güncelleme yapılamadı."));
+          toast.error(getApiErrorMessage(err, "Güncelleme yapılamadı."));
         },
       });
     } else {
@@ -164,14 +199,15 @@ export default function TenantsPage() {
       createTenantMutation.mutate(formData, {
         onSuccess: (res) => {
           if (res.success !== false) {
-            toast.success(res.message || "Yeni kurum başarıyla eklendi.");
+            toast.success("Yeni kurum başarıyla eklendi.");
             setIsFormOpen(false);
+            refetch();
           } else {
-            toast.error(res.message || "Kurum eklenirken hata oluştu.");
+            toast.error(getApiErrorMessage(res.message, "Kurum eklenirken hata oluştu."));
           }
         },
         onError: (err) => {
-          toast.error("Hata: " + (err.message || "Kurum eklenemedi."));
+          toast.error(getApiErrorMessage(err, "Kurum eklenemedi."));
         },
       });
     }
@@ -187,16 +223,24 @@ export default function TenantsPage() {
         onSuccess: () => {
           toast.success("Kurum başarıyla silindi.");
           setTenantToDelete(null);
+          refetch();
         },
         onError: (err) => {
-          toast.error("Silme hatası: " + (err.message || "İşlem başarısız."));
+          toast.error(getApiErrorMessage(err, "Silme işlemi başarısız."));
         },
       }
     );
   };
 
+  const { data: session } = useSession();
+  const userTenantId = (session?.user as any)?.tenantId || 0;
+  const isSuperAdmin = checkIsSuperAdmin(session?.user);
+
   // Filtered List
   const filteredTenants = (tenants || []).filter((t) => {
+    if (!isSuperAdmin && userTenantId > 0 && t.id !== userTenantId) {
+      return false;
+    }
     const q = searchQuery.toLowerCase();
     return (
       t.name.toLowerCase().includes(q) ||
@@ -227,13 +271,17 @@ export default function TenantsPage() {
             Kurum / Okul Yönetimi
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Sistemdeki tüm okul ve kurum tanımlamalarını bu ekrandan yönetebilirsiniz.
+            {isSuperAdmin
+              ? "Sistemdeki tüm okul ve kurum tanımlamalarını bu ekrandan yönetebilirsiniz."
+              : "Kurumunuza ait genel bilgileri bu ekrandan görüntüleyebilir ve güncellleyebilirsiniz."}
           </p>
         </div>
-        <Button onClick={handleOpenAdd} className="gap-2 shrink-0">
-          <Plus className="h-4 w-4" />
-          Yeni Kurum Ekle
-        </Button>
+        {isSuperAdmin && (
+          <Button onClick={handleOpenAdd} className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" />
+            Yeni Kurum Ekle
+          </Button>
+        )}
       </div>
 
       {/* Main Content Card */}
@@ -307,6 +355,7 @@ export default function TenantsPage() {
                   <TableHead>Logo</TableHead>
                   <TableHead>Kurum Adı</TableHead>
                   <TableHead>Kurum Kodu</TableHead>
+                  <TableHead>Durum</TableHead>
                   <TableHead className="text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
@@ -317,27 +366,7 @@ export default function TenantsPage() {
                       #{tenant.id}
                     </TableCell>
                     <TableCell>
-                      {tenant.logoUrl ? (
-                        <div className="h-12 w-12 flex items-center justify-center rounded-lg border bg-card p-1 shadow-xs overflow-hidden">
-                          <img
-                            src={getMinioUrl(tenant.logoUrl)}
-                            alt={tenant.name}
-                            className="max-h-full max-w-full object-contain"
-                            onError={(e) => {
-                              // If MinIO image fails to load, replace parent with letter avatar fallback
-                              const parent = e.currentTarget.parentElement;
-                              if (parent) {
-                                parent.className = "flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold";
-                                parent.innerHTML = tenant.name ? tenant.name.charAt(0).toUpperCase() : "O";
-                              }
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                          {tenant.name ? tenant.name.charAt(0).toUpperCase() : "O"}
-                        </div>
-                      )}
+                      <TenantLogoItem logoUrl={tenant.logoUrl} name={tenant.name} />
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="font-semibold text-foreground">{tenant.name}</div>
@@ -350,6 +379,17 @@ export default function TenantsPage() {
                         </Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground italic">Belirtilmedi</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {tenant.isActive !== false ? (
+                        <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25">
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Aktif
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/25">
+                          <XCircle className="h-3 w-3 mr-1" /> Pasif
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -448,6 +488,20 @@ export default function TenantsPage() {
                   className="hidden"
                 />
               </label>
+            </div>
+
+            {/* Kurum Durumu (Aktif / Pasif) */}
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-2xs mt-3">
+              <div className="space-y-0.5">
+                <Label className="text-base font-semibold">Kurum Durumu</Label>
+                <p className="text-xs text-muted-foreground">
+                  Kurumun sistemde aktif veya pasif olduğunu belirtir.
+                </p>
+              </div>
+              <Switch
+                checked={isActive}
+                onCheckedChange={setIsActive}
+              />
             </div>
 
             <DialogFooter className="mt-6">

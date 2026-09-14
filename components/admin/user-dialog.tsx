@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useTenants } from "@/hooks/useTenants";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { User, UserDto } from "@/hooks/useUsers";
-import { User as UserIcon } from "lucide-react";
+import { User as UserIcon, School } from "lucide-react";
+import { checkIsSuperAdmin } from "@/lib/utils";
 
 interface UserDialogProps {
   open: boolean;
@@ -31,10 +34,17 @@ export function UserDialog({
   isPending,
   onSubmit,
 }: UserDialogProps) {
+  const { data: session } = useSession();
+  const userTenantId = (session?.user as any)?.tenantId || 0;
+  const isSuperAdmin = checkIsSuperAdmin(session?.user);
+
+  const { data: tenants } = useTenants();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [mobilePhones, setMobilePhones] = useState("");
   const [password, setPassword] = useState("");
+  const [tenantId, setTenantId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (initialData) {
@@ -42,13 +52,15 @@ export function UserDialog({
       setEmail(initialData.email || initialData.Email || "");
       setMobilePhones(initialData.mobilePhones || initialData.MobilePhones || "");
       setPassword("");
+      setTenantId(initialData.tenantId ?? initialData.TenantId ?? (!isSuperAdmin && userTenantId > 0 ? userTenantId : undefined));
     } else {
       setFullName("");
       setEmail("");
       setMobilePhones("");
       setPassword("");
+      setTenantId(!isSuperAdmin && userTenantId > 0 ? userTenantId : undefined);
     }
-  }, [initialData, open]);
+  }, [initialData, open, isSuperAdmin, userTenantId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +68,7 @@ export function UserDialog({
       fullName: fullName.trim(),
       email: email.trim(),
       mobilePhones: mobilePhones.trim() || undefined,
+      tenantId: tenantId ?? 0,
     };
 
     if (initialData) {
@@ -83,6 +96,29 @@ export function UserDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 my-2">
+          {/* SuperAdmin Tenant Selection */}
+          {isSuperAdmin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="tenant-select" className="flex items-center gap-1.5 font-medium">
+                <School className="h-4 w-4 text-primary" />
+                Bağlı Olduğu Kurum (Tenant)
+              </Label>
+              <select
+                id="tenant-select"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={tenantId || ""}
+                onChange={(e) => setTenantId(Number(e.target.value) || undefined)}
+              >
+                <option value="">-- Kurum Yok (Bağımsız / SuperAdmin) --</option>
+                {tenants?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} (ID: #{t.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="fullname">Ad Soyad <span className="text-destructive">*</span></Label>
             <Input

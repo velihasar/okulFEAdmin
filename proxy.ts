@@ -22,11 +22,35 @@ export default async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    const userRole = (token.role as string) || "SUPER_ADMIN";
-    const allowedRoles = ["SUPER_ADMIN", "EDITOR", "VIEWER", "Yönetici"];
+    const userRole = (token.role as string) || (token.userRole as string) || "";
+    const userTenantId = Number(token.tenantId ?? 0);
+    const claims: string[] = Array.isArray(token.claims) ? (token.claims as string[]) : [];
 
-    if (!allowedRoles.includes(userRole)) {
-      return NextResponse.redirect(new URL("/admin/unauthorized", req.url));
+    const isSuperAdmin =
+      (userRole.toUpperCase() === "SUPER_ADMIN" ||
+        userRole.toUpperCase() === "SUPERADMIN" ||
+        claims.some((c) => /^superadmin$|^SUPER_ADMIN$/i.test(c))) &&
+      userTenantId === 0;
+
+    // Sadece SUPER_ADMIN için rota kısıtlaması uygula
+    if (isSuperAdmin) {
+      const superAdminAllowedPrefixes = [
+        "/admin/tenants",
+        "/admin/branches",
+        "/admin/users",
+        "/admin/roles",
+        "/admin/profile",
+        "/admin/unauthorized",
+      ];
+
+      const isExactAdminDashboard = pathname === "/admin" || pathname === "/admin/";
+      const isAllowedPrefix = superAdminAllowedPrefixes.some((prefix) =>
+        pathname.startsWith(prefix)
+      );
+
+      if (!isExactAdminDashboard && !isAllowedPrefix) {
+        return NextResponse.redirect(new URL("/admin/unauthorized", req.url));
+      }
     }
   }
 

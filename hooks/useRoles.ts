@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "@/lib/axios";
 import { Role, OperationClaim } from "@/types/api.types";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/utils";
 
 export function useRoles() {
   return useQuery<Role[]>({
@@ -54,8 +55,7 @@ export function useUpdateGroupClaims() {
       toast.success("Rol izinleri başarıyla güncellendi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data || "İzinler güncellenirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "İzinler güncellenirken hata oluştu."));
     },
   });
 }
@@ -69,8 +69,7 @@ export function useCreateRole() {
       toast.success("Rol başarıyla eklendi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data || "Rol eklenirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Rol eklenirken hata oluştu."));
     },
   });
 }
@@ -84,8 +83,7 @@ export function useUpdateRole() {
       toast.success("Rol başarıyla güncellendi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data || "Rol güncellenirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Rol güncellenirken hata oluştu."));
     },
   });
 }
@@ -96,11 +94,10 @@ export function useDeleteRole() {
     mutationFn: (id: number) => axiosInstance.delete(`/api/v1/groups/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
-      toast.success("Rol silindi.");
+      toast.success("Rol başarıyla silindi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data || "Rol silinirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Rol silinirken hata oluştu."));
     },
   });
 }

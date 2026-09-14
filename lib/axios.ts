@@ -3,7 +3,7 @@ import { getSession, signOut } from "next-auth/react";
 
 // Backend base URL — network adresine göre
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://192.168.1.108:5000";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export const axiosInstance = axios.create({
   baseURL: BACKEND_URL,
@@ -44,6 +44,10 @@ axiosInstance.interceptors.request.use(
     const token = (session as any)?.accessToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const tenantId = (session?.user as any)?.tenantId;
+    if (tenantId) {
+      config.headers["X-Tenant-Id"] = String(tenantId);
     }
     return config;
   },

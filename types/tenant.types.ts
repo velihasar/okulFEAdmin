@@ -9,6 +9,7 @@ export interface TenantGetAllDto {
   name: string;
   code?: string;
   logoUrl?: string;
+  isActive?: boolean;
 }
 
 // GET /api/tenants/getbyid DTO
@@ -17,6 +18,7 @@ export interface TenantGetByIdDto {
   name: string;
   code?: string;
   logoUrl?: string;
+  isActive?: boolean;
 }
 
 // POST /api/tenants Body
@@ -24,6 +26,7 @@ export interface CreateTenantCommand {
   name: string;
   code?: string;
   logoUrl?: string;
+  isActive?: boolean;
 }
 
 // PUT /api/tenants Body

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, checkIsSuperAdmin } from "@/lib/utils";
 import {
   LayoutDashboard,
   Building2,
@@ -27,17 +27,19 @@ interface NavItem {
   title: string;
   href: string;
   icon: any;
-  roles: string[];
+  roles?: string[];
   exact?: boolean;
   canAdd?: boolean;
   addHref?: string;
   addTitle?: string;
+  hideForSuperAdmin?: boolean;
+  superAdminOnly?: boolean;
 }
 
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role || "SUPER_ADMIN";
+  const isSuperAdmin = checkIsSuperAdmin(session?.user);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems: NavItem[] = [
@@ -45,14 +47,12 @@ export function Sidebar() {
       title: "Dashboard",
       href: "/admin",
       icon: LayoutDashboard,
-      roles: ["SUPER_ADMIN", "EDITOR", "VIEWER"],
       exact: true,
     },
     {
       title: "Kurumlar / Okullar",
       href: "/admin/tenants",
       icon: Building2,
-      roles: ["SUPER_ADMIN", "EDITOR", "VIEWER"],
       canAdd: true,
       addHref: "/admin/tenants?action=new",
       addTitle: "Yeni Kurum Ekle",
@@ -61,7 +61,6 @@ export function Sidebar() {
       title: "Şubeler",
       href: "/admin/branches",
       icon: GitFork,
-      roles: ["SUPER_ADMIN", "EDITOR"],
       canAdd: true,
       addHref: "/admin/branches?action=new",
       addTitle: "Yeni Şube Ekle",
@@ -70,7 +69,7 @@ export function Sidebar() {
       title: "Öğrenciler",
       href: "/admin/students",
       icon: GraduationCap,
-      roles: ["SUPER_ADMIN", "EDITOR"],
+      hideForSuperAdmin: true,
       canAdd: true,
       addHref: "/admin/students?action=new",
       addTitle: "Yeni Öğrenci Kaydet",
@@ -79,7 +78,7 @@ export function Sidebar() {
       title: "Öğretmenler",
       href: "/admin/teachers",
       icon: UserCheck,
-      roles: ["SUPER_ADMIN", "EDITOR"],
+      hideForSuperAdmin: true,
       canAdd: true,
       addHref: "/admin/teachers?action=new",
       addTitle: "Yeni Öğretmen Ekle",
@@ -88,7 +87,7 @@ export function Sidebar() {
       title: "Veliler",
       href: "/admin/parents",
       icon: Users,
-      roles: ["SUPER_ADMIN", "EDITOR"],
+      hideForSuperAdmin: true,
       canAdd: true,
       addHref: "/admin/parents?action=new",
       addTitle: "Yeni Veli Kaydet",
@@ -97,19 +96,18 @@ export function Sidebar() {
       title: "Öğrenci - Veli Eşleştirme",
       href: "/admin/student-parents",
       icon: HeartHandshake,
-      roles: ["SUPER_ADMIN", "EDITOR"],
+      hideForSuperAdmin: true,
     },
     {
       title: "Kişi Kayıtları",
       href: "/admin/people",
       icon: Contact,
-      roles: ["SUPER_ADMIN", "EDITOR"],
+      hideForSuperAdmin: true,
     },
     {
       title: "Kullanıcılar",
       href: "/admin/users",
       icon: UserCog,
-      roles: ["SUPER_ADMIN"],
       canAdd: true,
       addHref: "/admin/users?action=new",
       addTitle: "Yeni Kullanıcı Ekle",
@@ -118,14 +116,18 @@ export function Sidebar() {
       title: "Roller & İzinler",
       href: "/admin/roles",
       icon: ShieldCheck,
-      roles: ["SUPER_ADMIN"],
       canAdd: true,
       addHref: "/admin/roles?action=new",
       addTitle: "Yeni Rol Ekle",
     },
   ];
 
-  const visibleItems = navItems.filter((item) => item.roles.includes(role));
+  const visibleItems = navItems.filter((item) => {
+    if (isSuperAdmin) {
+      return !item.hideForSuperAdmin;
+    }
+    return !item.superAdminOnly;
+  });
 
   return (
     <div 

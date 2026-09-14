@@ -70,7 +70,7 @@ export function useCreateTenant() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
     },
   });
 }
@@ -92,7 +92,7 @@ export function useUpdateTenant() {
       return response.data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: tenantKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
       const id = variables instanceof FormData ? Number(variables.get("id")) : variables.id;
       if (id) {
         queryClient.invalidateQueries({ queryKey: tenantKeys.detail(id) });
@@ -116,7 +116,7 @@ export function useDeleteTenant() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
     },
   });
 }

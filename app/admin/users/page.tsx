@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +27,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Trash2, User as UserIcon, Mail, Phone, ShieldCheck } from "lucide-react";
+import { Plus, Edit2, Trash2, User as UserIcon, Mail, Phone, ShieldCheck, School } from "lucide-react";
 import { UserDialog } from "@/components/admin/user-dialog";
 import { UserRolesDialog } from "@/components/admin/user-roles-dialog";
 import { useUsers, User } from "@/hooks/useUsers";
+import { checkIsSuperAdmin } from "@/lib/utils";
 
 export default function UsersPage() {
   const searchParams = useSearchParams();
@@ -57,11 +59,20 @@ export default function UsersPage() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  const { data: session } = useSession();
+  const userTenantId = (session?.user as any)?.tenantId || 0;
+  const isSuperAdmin = checkIsSuperAdmin(session?.user);
+
   const { query, createMutation, updateMutation, deleteMutation } = useUsers(page, pageSize, debouncedSearch);
   const { data: rawData, isLoading, isFetching, refetch } = query;
-  const users: User[] = Array.isArray(rawData) ? rawData : (rawData as any)?.data || [];
+  const rawUsers: User[] = Array.isArray(rawData) ? rawData : (rawData as any)?.data || [];
+  const users: User[] = rawUsers.filter((u: any) => {
+    if (isSuperAdmin || userTenantId === 0) return true;
+    const tId = u.tenantId ?? u.TenantId;
+    return tId === userTenantId;
+  });
   const totalRecords: number = Array.isArray(rawData)
-    ? rawData.length
+    ? users.length
     : ((rawData as any)?.totalRecords ?? (rawData as any)?.TotalRecords ?? users.length);
   const totalPages: number = (rawData as any)?.totalPages ?? Math.max(1, Math.ceil(totalRecords / pageSize));
 
@@ -113,6 +124,23 @@ export default function UsersPage() {
               <div className="text-xs text-muted-foreground">ID: #{uid}</div>
             </div>
           </div>
+        );
+      },
+    },
+    {
+      id: "tenantName",
+      header: "Bağlı Kurum",
+      cell: ({ row }) => {
+        const tName = row.original.tenantName || row.original.TenantName;
+        const tId = row.original.tenantId ?? row.original.TenantId;
+        if (!tName && !tId) {
+          return <span className="text-xs text-muted-foreground italic">-</span>;
+        }
+        return (
+          <Badge variant="outline" className="font-normal gap-1 bg-primary/5 text-primary border-primary/20">
+            <School className="h-3 w-3" />
+            {tName || `Kurum #${tId}`}
+          </Badge>
         );
       },
     },

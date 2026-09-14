@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "@/lib/axios";
 import { toast } from "sonner";
 import { PaginatedResult, SelectionItem } from "@/types/api.types";
+import { getApiErrorMessage } from "@/lib/utils";
 
 export interface User {
   id?: number;
@@ -17,6 +18,10 @@ export interface User {
   Status?: boolean;
   userGroups?: SelectionItem[];
   UserGroups?: SelectionItem[];
+  tenantId?: number;
+  TenantId?: number;
+  tenantName?: string;
+  TenantName?: string;
 }
 
 export type UserDto = User;
@@ -44,6 +49,7 @@ export function useUsers(page: number = 1, take: number = 10, search?: string) {
         mobilePhones: data.mobilePhones || data.MobilePhones || "",
         password: data.password || data.Password,
         status: data.status ?? true,
+        tenantId: data.tenantId,
         citizenId: 0,
       });
       return res.data;
@@ -53,8 +59,7 @@ export function useUsers(page: number = 1, take: number = 10, search?: string) {
       toast.success("Kullanıcı başarıyla eklendi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data?.message || err.response?.data || "Kullanıcı eklenirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Kullanıcı eklenirken hata oluştu."));
     },
   });
 
@@ -65,6 +70,7 @@ export function useUsers(page: number = 1, take: number = 10, search?: string) {
         fullName: data.fullName || data.FullName,
         email: data.email || data.Email,
         mobilePhones: data.mobilePhones || data.MobilePhones || "",
+        tenantId: data.tenantId,
       };
       const res = await axiosInstance.put("/api/v1/users", payload);
       return res.data;
@@ -74,8 +80,7 @@ export function useUsers(page: number = 1, take: number = 10, search?: string) {
       toast.success("Kullanıcı başarıyla güncellendi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data?.message || err.response?.data || "Kullanıcı güncellenirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Kullanıcı güncellenirken hata oluştu."));
     },
   });
 
@@ -89,8 +94,7 @@ export function useUsers(page: number = 1, take: number = 10, search?: string) {
       toast.success("Kullanıcı silindi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data?.message || err.response?.data || "Kullanıcı silinirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Kullanıcı silinirken hata oluştu."));
     },
   });
 
@@ -132,8 +136,7 @@ export function useUpdateUserGroups() {
       toast.success("Kullanıcı rolleri başarıyla güncellendi.");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.Message || err.response?.data?.message || err.response?.data || "Roller güncellenirken hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Roller güncellenirken hata oluştu."));
     },
   });
 }
@@ -163,12 +166,7 @@ export function useChangePassword() {
       toast.success("Şifreniz başarıyla güncellendi.");
     },
     onError: (err: any) => {
-      const msg =
-        err.response?.data?.Message ||
-        err.response?.data?.message ||
-        err.response?.data ||
-        "Şifre değiştirilirken bir hata oluştu.";
-      toast.error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error(getApiErrorMessage(err, "Şifre değiştirilirken bir hata oluştu."));
     },
   });
 }

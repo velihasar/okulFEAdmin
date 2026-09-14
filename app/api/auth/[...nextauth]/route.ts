@@ -46,7 +46,15 @@ export const authOptions = {
           // JWT Token içinden kullanıcının gerçek Ad Soyad (FullName) ve ID bilgisini alıyoruz
           let fullName = credentials.email;
           let userId: number | undefined = undefined;
-          let userRole = "SUPER_ADMIN";
+          let userRole = "";
+          let userTenantId = 0;
+
+          // TenantId claim kontrolü (Örn: "TenantId:2")
+          const tenantClaim = claimsList.find((c) => typeof c === "string" && c.startsWith("TenantId:"));
+          if (tenantClaim) {
+            const tid = Number(tenantClaim.split(":")[1]);
+            if (tid) userTenantId = tid;
+          }
 
           if (Token) {
             try {
@@ -65,17 +73,42 @@ export const authOptions = {
                   decodedPayload["sub"];
                 if (idStr) userId = Number(idStr);
 
-                const jwtRole =
+                const rawTenantId =
+                  decodedPayload["TenantId"] ||
+                  decodedPayload["tenantid"] ||
+                  decodedPayload["Tenantid"] ||
+                  decodedPayload["tenant_id"];
+                if (rawTenantId) userTenantId = Number(rawTenantId);
+
+                const rawRole =
                   decodedPayload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
                   decodedPayload["role"];
-                if (jwtRole && jwtRole !== "Person" && jwtRole !== "Unknown") {
-                  userRole = jwtRole;
-                } else {
-                  userRole = "SUPER_ADMIN";
+
+                if (Array.isArray(rawRole)) {
+                  userRole = rawRole[0] || "";
+                } else if (typeof rawRole === "string") {
+                  userRole = rawRole;
                 }
               }
             } catch (e) {
               console.error("Token payload decode error:", e);
+            }
+          }
+
+          const hasSuperAdminClaim =
+            /super/i.test(userRole) ||
+            claimsList.some((c) => /^SuperAdmin$|^SUPER_ADMIN$|^Super Admin$/i.test(c));
+
+          if (hasSuperAdminClaim && userTenantId === 0) {
+            userRole = "SUPER_ADMIN";
+          } else {
+            const matchedClaim = claimsList.find((c) =>
+              /^KurumSahibi$|^Kurum Sahibi$|^TenantAdmin$|^SubeYonetici$|^OKUL_ADMIN$|^EDITOR$/i.test(c)
+            );
+            if (matchedClaim) {
+              userRole = matchedClaim;
+            } else if (!userRole || userRole === "Person" || userRole === "Unknown" || userRole === "SUPER_ADMIN") {
+              userRole = "KurumSahibi";
             }
           }
 
@@ -84,8 +117,9 @@ export const authOptions = {
             email: credentials.email,
             name: fullName,
             fullName: fullName,
-            role: userRole || "SUPER_ADMIN",
-            userRole: userRole || "SUPER_ADMIN",
+            role: userRole,
+            userRole: userRole,
+            tenantId: userTenantId,
             claims: claimsList,
             accessToken: Token,
             refreshToken: RefreshToken,
@@ -106,6 +140,7 @@ export const authOptions = {
         token.fullName = user.fullName;
         token.role = user.role;
         token.userRole = user.userRole;
+        token.tenantId = user.tenantId;
         token.claims = user.claims;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
@@ -119,6 +154,7 @@ export const authOptions = {
         (session.user as any).fullName = token.fullName || token.name;
         (session.user as any).role = token.role;
         (session.user as any).userRole = token.userRole;
+        (session.user as any).tenantId = token.tenantId;
         (session.user as any).claims = token.claims;
       }
       session.accessToken = token.accessToken;

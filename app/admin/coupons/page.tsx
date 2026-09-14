@@ -185,7 +185,7 @@ export default function CouponsPage() {
       cell: ({ row }) => {
         const isShowcase = Boolean(row.original.isShowcase);
         return isShowcase ? (
-          <Badge variant="default" className="bg-[#4A5D3E] hover:bg-[#3D4D33] text-white text-[11px] gap-1 shadow-xs">
+          <Badge variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] gap-1 shadow-xs">
             🌟 Vitrinde Yayında
           </Badge>
         ) : (
