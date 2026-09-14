@@ -99,7 +99,10 @@ export function StudentParentsDialog({
     ? `${studentPerson.firstName} ${studentPerson.lastName}`
     : `Öğrenci #${student.studentNumber}`;
 
-  // Filter people list for existing selection tab (exclude already linked people and the student)
+  // Effective tenant ID for the student
+  const effectiveTenantId = student.tenantId || tenantId;
+
+  // Filter people list for existing selection tab (exclude already linked people, the student, and people from other tenants)
   const linkedPersonIds = linkedStudentParents
     .map((sp) => parents.find((p) => p.id === sp.parentId)?.personId)
     .filter(Boolean);
@@ -107,6 +110,11 @@ export function StudentParentsDialog({
   const availablePeople = people.filter((p) => {
     if (p.id === student.personId) return false;
     if (linkedPersonIds.includes(p.id)) return false;
+
+    // Institution / Tenant isolation check
+    if (effectiveTenantId && effectiveTenantId > 0 && p.tenantId && p.tenantId !== effectiveTenantId) {
+      return false;
+    }
 
     const term = normalizeTr(existingSearchTerm);
     if (!term) return true;
